@@ -1,0 +1,53 @@
+name: Build H69KControl IPA
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: |
+          brew install xcodegen || true
+          xcodegen --version
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build (unsigned)
+        run: |
+          xcodebuild \
+            -project H69KControl.xcodeproj \
+            -scheme H69KControl \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Package unsigned IPA
+        run: |
+          APP_PATH=$(find "$PWD/build" -name "H69KControl.app" -type d | head -1)
+          if [ -z "$APP_PATH" ]; then
+            APP_PATH=$(find "$PWD" -name "H69KControl.app" -type d | head -1)
+          fi
+          echo "APP_PATH=$APP_PATH"
+          ls -la "$APP_PATH"
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/
+          zip -r H69KControl-unsigned.ipa Payload
+          ls -la H69KControl-unsigned.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: H69KControl-unsigned-ipa
+          path: H69KControl-unsigned.ipa
+          if-no-files-found: error

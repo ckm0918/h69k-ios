@@ -1,0 +1,36 @@
+name: H69KControl
+options:
+  bundleIdPrefix: com.h69k
+  deploymentTarget:
+    iOS: "14.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+targets:
+  H69KControl:
+    type: application
+    platform: iOS
+    sources:
+      - path: H69KControl
+    info:
+      path: H69KControl/Info.plist
+      properties:
+        CFBundleDisplayName: H69K 控制台
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        NSLocalNetworkUsageDescription: 需要访问局域网内的 H69K 路由器以读取状态和控制设备
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.h69k.control
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_IDENTITY: ""
+        ENABLE_BITCODE: NO
