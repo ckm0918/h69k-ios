@@ -214,50 +214,16 @@ struct FanSectionView: View {
             VStack(alignment: .leading, spacing: 10) {
                 CardTitle(icon: "fanblades", title: "散热风扇", iconColor: AppTheme.cyan)
                 if let f = fanInfo {
-                    HStack(spacing: 12) {
-                        statCell("CPU", "\(f["cpu"] ?? "--")°C", AppTheme.warn)
-                        statCell("GPU", "\(f["gpu"] ?? "--")°C", AppTheme.danger)
-                        statCell("模式", (f["mode"] as? String) == "auto" ? "自动" : "手动",
-                                 (f["mode"] as? String) == "auto" ? AppTheme.good : AppTheme.cyan)
-                        statCell("当前档位", fanLevelText(f), fanLevelColor(f))
-                    }
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text("档位")
-                                .font(.system(size: 11))
-                                .foregroundColor(AppTheme.textSecondary)
-                            Spacer()
-                            Text((f["mode"] as? String) == "auto"
-                                 ? "自动温控中 · 点击档位切换手动"
-                                 : "手动模式 · PWM \((f["pwm"] as? Int) ?? 0)")
-                                .font(.system(size: 10))
-                                .foregroundColor(AppTheme.textSecondary.opacity(0.7))
-                        }
-                        HStack(spacing: 8) {
-                            ForEach(0...6, id: \.self) { lv in
-                                Button(action: { fanTapLevel(lv) }) {
-                                    Text(lv == 0 ? "关" : "\(lv)")
-                                        .font(.system(size: 12, weight: .semibold))
-                                        .foregroundColor((f["state"] as? Int) == lv ? .white : AppTheme.textSecondary)
-                                        .frame(width: 36, height: 32)
-                                        .background(RoundedRectangle(cornerRadius: 8)
-                                            .fill((f["state"] as? Int) == lv ? AppTheme.gradient : Color.white.opacity(0.06)))
-                                }
-                                .disabled(fanBusy)
-                            }
-                        }
+                    FanStatsRow(fanInfo: f)
+                    FanLevelPicker(fanInfo: f, busy: fanBusy) { lv in
+                        fanTapLevel(lv)
                     }
                     if let msg = fanMsg {
                         Text(msg).font(.system(size: 11)).foregroundColor(AppTheme.textSecondary)
                     }
-                    Button(action: { fanMode("auto") }) {
-                        Text("恢复自动温控")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor((f["mode"] as? String) == "auto" ? .white : AppTheme.textSecondary)
-                            .padding(.horizontal, 14).padding(.vertical, 8)
-                            .background(Capsule().fill((f["mode"] as? String) == "auto" ? AppTheme.gradient : Color.white.opacity(0.06)))
+                    FanModeButton(fanInfo: f, busy: fanBusy) {
+                        fanMode("auto")
                     }
-                    .disabled(fanBusy)
                 } else {
                     Text("风扇状态获取中…")
                         .font(.system(size: 12))
@@ -266,27 +232,6 @@ struct FanSectionView: View {
             }
         }
         .onAppear { loadFan() }
-    }
-
-    private func statCell(_ k: String, _ v: String, _ c: Color) -> some View {
-        VStack(spacing: 3) {
-            Text(k).font(.system(size: 10)).foregroundColor(AppTheme.textSecondary)
-            Text(v).font(.system(size: 15, weight: .bold)).foregroundColor(c)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private func fanLevelText(_ f: [String: Any]) -> String {
-        let st = f["state"] as? Int ?? -1
-        if st == 0 { return "关闭" }
-        if st > 0 { return "\(st) 档" }
-        return "--"
-    }
-
-    private func fanLevelColor(_ f: [String: Any]) -> Color {
-        let st = f["state"] as? Int ?? -1
-        if st == 0 { return AppTheme.textSecondary }
-        return AppTheme.cyan
     }
 
     private func loadFan() {
@@ -350,6 +295,128 @@ struct FanSectionView: View {
                 }
             }
         }
+    }
+}
+
+// 温度与模式统计行
+struct FanStatsRow: View {
+    let fanInfo: [String: Any]
+
+    var body: some View {
+        HStack(spacing: 12) {
+            statCell("CPU", "\(fanInfo["cpu"] ?? "--")°C", AppTheme.warn)
+            statCell("GPU", "\(fanInfo["gpu"] ?? "--")°C", AppTheme.danger)
+            statCell("模式", isAuto ? "自动" : "手动", isAuto ? AppTheme.good : AppTheme.cyan)
+            statCell("当前档位", levelText, levelColor)
+        }
+    }
+
+    private var isAuto: Bool {
+        (fanInfo["mode"] as? String) == "auto"
+    }
+
+    private var levelText: String {
+        let st = fanInfo["state"] as? Int ?? -1
+        if st == 0 { return "关闭" }
+        if st > 0 { return "\(st) 档" }
+        return "--"
+    }
+
+    private var levelColor: Color {
+        let st = fanInfo["state"] as? Int ?? -1
+        if st == 0 { return AppTheme.textSecondary }
+        return AppTheme.cyan
+    }
+
+    private func statCell(_ k: String, _ v: String, _ c: Color) -> some View {
+        VStack(spacing: 3) {
+            Text(k).font(.system(size: 10)).foregroundColor(AppTheme.textSecondary)
+            Text(v).font(.system(size: 15, weight: .bold)).foregroundColor(c)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// 档位按钮行
+struct FanLevelPicker: View {
+    let fanInfo: [String: Any]
+    let busy: Bool
+    var onSet: (Int) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("档位")
+                    .font(.system(size: 11))
+                    .foregroundColor(AppTheme.textSecondary)
+                Spacer()
+                Text(isAuto ? "自动温控中 · 点击档位切换手动" : "手动模式 · PWM \(pwm)")
+                    .font(.system(size: 10))
+                    .foregroundColor(AppTheme.textSecondary.opacity(0.7))
+            }
+            HStack(spacing: 8) {
+                ForEach(0...6, id: \.self) { lv in
+                    Button(action: { onSet(lv) }) {
+                        Text(lv == 0 ? "关" : "\(lv)")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(isCurrent(lv) ? .white : AppTheme.textSecondary)
+                            .frame(width: 36, height: 32)
+                            .background(
+                                Group {
+                                    if isCurrent(lv) {
+                                        RoundedRectangle(cornerRadius: 8).fill(AppTheme.gradient)
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.06))
+                                    }
+                                }
+                            )
+                    }
+                    .disabled(busy)
+                }
+            }
+        }
+    }
+
+    private var isAuto: Bool {
+        (fanInfo["mode"] as? String) == "auto"
+    }
+
+    private var pwm: Int {
+        (fanInfo["pwm"] as? Int) ?? 0
+    }
+
+    private func isCurrent(_ lv: Int) -> Bool {
+        (fanInfo["state"] as? Int) == lv
+    }
+}
+
+// 恢复自动温控按钮
+struct FanModeButton: View {
+    let fanInfo: [String: Any]
+    let busy: Bool
+    var onAuto: () -> Void
+
+    var body: some View {
+        Button(action: onAuto) {
+            Text("恢复自动温控")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(isAuto ? .white : AppTheme.textSecondary)
+                .padding(.horizontal, 14).padding(.vertical, 8)
+                .background(
+                    Group {
+                        if isAuto {
+                            Capsule().fill(AppTheme.gradient)
+                        } else {
+                            Capsule().fill(Color.white.opacity(0.06))
+                        }
+                    }
+                )
+        }
+        .disabled(busy)
+    }
+
+    private var isAuto: Bool {
+        (fanInfo["mode"] as? String) == "auto"
     }
 }
 

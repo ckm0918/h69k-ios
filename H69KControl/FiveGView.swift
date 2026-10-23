@@ -182,7 +182,13 @@ struct FiveGView: View {
                 .foregroundColor(active ? .white : AppTheme.textSecondary)
                 .padding(.horizontal, 16).padding(.vertical, 9)
                 .background(
-                    Capsule().fill(active ? AppTheme.gradient : Color.white.opacity(0.06))
+                    Group {
+                        if active {
+                            Capsule().fill(AppTheme.gradient)
+                        } else {
+                            Capsule().fill(Color.white.opacity(0.06))
+                        }
+                    }
                 )
         }
         .disabled(acting)
