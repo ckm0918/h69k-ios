@@ -43,6 +43,9 @@ jobs:
               grep -E "error:|\.swift:[0-9]+:|note:|warning:" build.log | head -60 || true
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
+            grep -E "error:|\.swift:[0-9]+:" build.log | head -30 | while IFS= read -r line; do
+              echo "::error::$line"
+            done
           fi
           exit $EXIT
 
