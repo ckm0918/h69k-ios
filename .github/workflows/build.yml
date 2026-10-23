@@ -34,20 +34,32 @@ jobs:
             build 2>&1 | tee build.log
           EXIT=${PIPESTATUS[0]}
           echo "=== COMPILE ERRORS ==="
-          grep -E "error:|\.swift:[0-9]+:" build.log | head -50 || true
+          grep -nE "error:|\.swift:[0-9]+:|note:" build.log | head -80 || true
+          echo "=== LOG HEAD 130 ==="
+          head -130 build.log || true
+          echo "=== LOG TAIL 40 ==="
+          tail -40 build.log || true
           echo "=== EXIT=$EXIT ==="
           if [ $EXIT -ne 0 ]; then
             {
               echo "## 编译失败详情"
               echo '```'
-              grep -E "error:|\.swift:[0-9]+:|note:|warning:" build.log | head -60 || true
+              grep -nE "error:|\.swift:[0-9]+:|note:|warning:" build.log | head -80 || true
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
-            grep -E "error:|\.swift:[0-9]+:" build.log | head -30 | while IFS= read -r line; do
+            grep -nE "error:|\.swift:[0-9]+:" build.log | head -30 | while IFS= read -r line; do
               echo "::error::$line"
             done
           fi
           exit $EXIT
+
+      - name: Upload build.log (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: warn
 
       - name: Package unsigned IPA
         run: |

@@ -108,7 +108,7 @@ struct FiveGView: View {
                     CardView {
                         VStack(alignment: .leading, spacing: 12) {
                             CardTitle(icon: "arrow.triangle.branch", title: "5G 网络模式")
-                            Picker("网络模式", selection: modeSelection) {
+                            Picker("网络模式", selection: $modeSelection) {
                                 Text("自动(5G优先)").tag(0)
                                 Text("4G").tag(1)
                                 Text("2G").tag(2)
