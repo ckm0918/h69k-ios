@@ -111,7 +111,7 @@ struct ControlView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 11)
             .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(active ? AppTheme.gradient : Color.white.opacity(0.06)))
+                            .fill(active ? AnyShapeStyle(AppTheme.gradient) : AnyShapeStyle(Color.white.opacity(0.06))))
             .foregroundColor(active ? .white : AppTheme.textSecondary)
         }
     }

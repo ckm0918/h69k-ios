@@ -24,7 +24,7 @@ struct DashboardView: View {
                         gaugesRow(s)
                         networkCard(s)
                         modeCard(s)
-                        if !s.modemStatus.isEmpty { modemCard(s) }
+                        if !(s.modemStatus ?? "").isEmpty { modemCard(s) }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -260,7 +260,7 @@ struct DashboardView: View {
         CardView {
             VStack(alignment: .leading, spacing: 8) {
                 CardTitle(icon: "antenna.radiowaves.left.and.right", title: "5G 模组", iconColor: AppTheme.cyan)
-                Text(s.modemStatus)
+                Text(s.modemStatus ?? "")
                     .font(AppTheme.mono(9))
                     .foregroundColor(AppTheme.textSecondary)
                     .lineLimit(6)

@@ -144,7 +144,7 @@ struct Aria2TaskCard: View {
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(AppTheme.textPrimary)
                             .lineLimit(1)
-                        let (stateTxt, stateKey) = task.stateColor
+                        let (stateTxt, _) = task.stateColor
                         HStack(spacing: 5) {
                             StatusDot(color: stateColor())
                             Text(stateTxt).font(.system(size: 11))
