@@ -34,8 +34,16 @@ jobs:
             build 2>&1 | tee build.log
           EXIT=${PIPESTATUS[0]}
           echo "=== COMPILE ERRORS ==="
-          grep -E "error:|\.swift:[0-9]+:|warning: .*(deprecated|unavailable|'[^']*' is only available)" build.log | head -40 || true
+          grep -E "error:|\.swift:[0-9]+:" build.log | head -50 || true
           echo "=== EXIT=$EXIT ==="
+          if [ $EXIT -ne 0 ]; then
+            {
+              echo "## 编译失败详情"
+              echo '```'
+              grep -E "error:|\.swift:[0-9]+:|note:|warning:" build.log | head -60 || true
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
           exit $EXIT
 
       - name: Package unsigned IPA
