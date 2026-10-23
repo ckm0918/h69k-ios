@@ -2,10 +2,12 @@ import SwiftUI
 
 @main
 struct H69KControlApp: App {
+    @ObservedObject var settings = AppSettings.shared
+
     var body: some Scene {
         WindowGroup {
             RootView()
-                .preferredColorScheme(.dark)
+                .preferredColorScheme(settings.colorScheme)
         }
     }
 }
@@ -57,17 +59,25 @@ struct MainTabView: View {
                 .tabItem { Label("总览", systemImage: "gauge") }
                 .tag(0)
 
-            NavigationView { Aria2View() }
-                .tabItem { Label("下载", systemImage: "arrow.down.circle") }
+            NavigationView { FiveGView() }
+                .tabItem { Label("网络", systemImage: "antenna.radiowaves.left.and.right") }
                 .tag(1)
 
-            NavigationView { ControlView() }
-                .tabItem { Label("控制", systemImage: "slider.horizontal.3") }
+            NavigationView { SMSView() }
+                .tabItem { Label("短信", systemImage: "message") }
                 .tag(2)
+
+            NavigationView { Aria2View() }
+                .tabItem { Label("下载", systemImage: "arrow.down.circle") }
+                .tag(3)
+
+            NavigationView { ServiceView() }
+                .tabItem { Label("服务", systemImage: "bolt.horizontal.circle") }
+                .tag(4)
 
             NavigationView { SettingsView() }
                 .tabItem { Label("设置", systemImage: "gearshape") }
-                .tag(3)
+                .tag(5)
         }
         .accentColor(AppTheme.primary)
         .background(AppTheme.bg.edgesIgnoringSafeArea(.all))

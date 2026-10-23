@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // MARK: - 数据模型（对应 h69k API 网关返回）
 
@@ -116,6 +117,132 @@ struct Aria2GlobalStat: Codable {
 
     enum CodingKeys: String, CodingKey {
         case downloadSpeed, uploadSpeed, numActive, numWaiting, numStopped
+    }
+}
+
+// MARK: - 5G 状态
+struct FiveGStatus: Codable {
+    var raw: String?
+    var signal: SignalInfo?
+    var net: NetModeInfo?
+    var cereg: String?
+    var registered: Bool?
+    var wwanIp: String?
+
+    struct SignalInfo: Codable {
+        var csq: Int?
+        var rssiDbm: Int?
+        var level: String?
+
+        enum CodingKeys: String, CodingKey {
+            case csq
+            case rssiDbm = "rssi_dbm"
+            case level
+        }
+
+        var levelText: String {
+            switch level {
+            case "excellent": return "极好"
+            case "good": return "良好"
+            case "fair": return "一般"
+            case "poor": return "较差"
+            case "bad": return "极差"
+            default: return "未知"
+            }
+        }
+        var levelColor: Color {
+            switch level {
+            case "excellent", "good": return AppTheme.good
+            case "fair": return AppTheme.warn
+            case "poor", "bad": return AppTheme.danger
+            default: return AppTheme.textSecondary
+            }
+        }
+    }
+
+    struct NetModeInfo: Codable {
+        var modeCode: String?
+        var mode: String?
+        var detail: [String]?
+
+        enum CodingKeys: String, CodingKey {
+            case modeCode = "mode_code"
+            case mode
+            case detail
+        }
+    }
+}
+
+// MARK: - 短信
+struct SMSItem: Codable, Identifiable {
+    var id: String
+    var sender: String
+    var time: String
+    var read: Bool
+    var text: String
+}
+
+struct SMSListEnvelope: Codable {
+    var ok: Bool?
+    var error: String?
+    var items: [SMSItem]?
+}
+
+// MARK: - WiFi
+struct WifiRadio: Codable {
+    var radio: String
+    var ssid: String
+    var disabled: Bool
+    var hwmode: String
+    var band: String
+}
+
+struct WifiStatus: Codable {
+    var ok: Bool?
+    var radios: [WifiRadio]?
+    var activeBand: String?
+
+    enum CodingKeys: String, CodingKey {
+        case ok, radios
+        case activeBand = "active_band"
+    }
+}
+
+// MARK: - OpenClash
+struct ClashStatus: Codable {
+    var ok: Bool?
+    var running: Bool?
+    var nodeCount: Int?
+    var nodes: [String]?
+    var httpPort: Int?
+    var socksPort: Int?
+    var dnsPort: Int?
+    var dashboardPort: Int?
+    var configFile: String?
+
+    enum CodingKeys: String, CodingKey {
+        case ok, running, nodes
+        case nodeCount = "node_count"
+        case httpPort = "http_port"
+        case socksPort = "socks_port"
+        case dnsPort = "dns_port"
+        case dashboardPort = "dashboard_port"
+        case configFile = "config_file"
+    }
+}
+
+// MARK: - AdGuard
+struct AdGuardStatus: Codable {
+    var ok: Bool?
+    var running: Bool?
+    var webPort: Int?
+    var dnsPort: Int?
+    var upstreams: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case ok, running, upstreams
+        case webPort = "web_port"
+        case dnsPort = "dns_port"
     }
 }
 
