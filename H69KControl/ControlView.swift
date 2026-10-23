@@ -110,8 +110,15 @@ struct ControlView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 11)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(active ? AnyShapeStyle(AppTheme.gradient) : AnyShapeStyle(Color.white.opacity(0.06))))
+            .background(
+                Group {
+                    if active {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous).fill(AppTheme.gradient)
+                    } else {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.white.opacity(0.06))
+                    }
+                }
+            )
             .foregroundColor(active ? .white : AppTheme.textSecondary)
         }
     }
