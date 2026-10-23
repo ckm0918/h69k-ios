@@ -22,6 +22,7 @@ jobs:
 
       - name: Build (unsigned)
         run: |
+          set -o pipefail
           xcodebuild \
             -project H69KControl.xcodeproj \
             -scheme H69KControl \
@@ -30,7 +31,12 @@ jobs:
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            build
+            build 2>&1 | tee build.log
+          EXIT=${PIPESTATUS[0]}
+          echo "=== COMPILE ERRORS ==="
+          grep -E "error:|\.swift:[0-9]+:|warning: .*(deprecated|unavailable|'[^']*' is only available)" build.log | head -40 || true
+          echo "=== EXIT=$EXIT ==="
+          exit $EXIT
 
       - name: Package unsigned IPA
         run: |
