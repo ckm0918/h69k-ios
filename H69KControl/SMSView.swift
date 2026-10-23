@@ -150,7 +150,7 @@ struct SMSRow: View {
         }
         .buttonStyle(PlainButtonStyle())
         .contextMenu {
-            Button(role: .destructive, action: onDelete) {
+            Button(action: onDelete) {
                 Label("删除", systemImage: "trash")
             }
         }
