@@ -134,7 +134,7 @@ struct QuickSettingsView: View {
                         .font(.system(size: 11))
                         .foregroundColor(AppTheme.textSecondary)
                 }
-                toggleRow(icon: "wifi", title: "WiFi", isOn: $wifiOn) { on in
+                toggleRow(icon: "network", title: "宽带", isOn: $wifiOn) { on in
                     netSwitch("net_wifi", on ? "on" : "off")
                 }
                 Divider().background(AppTheme.cardBorder)
@@ -188,17 +188,10 @@ struct QuickSettingsView: View {
         APIClient.shared.status { r in
             DispatchQueue.main.async {
                 if case .success(let s) = r {
-                    // 从 net_conf 真实回读 WiFi / 5G 数据开关
+                    // 常用设置: 宽带 / 5G 数据开关（net_conf 语义：wifi=宽带出口, data=5G数据）
                     wifiOn = s.netConf?["wifi"] != "off"
                     dataOn = s.netConf?["data"] != "off"
                     netModeIdx = s.netMode == "lock-wan" ? 1 : (s.netMode == "lock-5g" ? 2 : 0)
-                }
-            }
-        }
-        APIClient.shared.wifiStatus { r in
-            DispatchQueue.main.async {
-                if case .success(let w) = r {
-                    wifiOn = !(w.radios?.first?.disabled ?? true)
                 }
             }
         }

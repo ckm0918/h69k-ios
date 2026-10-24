@@ -228,6 +228,11 @@ final class APIClient {
         }
     }
 
+    // MARK: 路由器体检 (v1.4)
+    func diagnose(completion: @escaping (Result<DiagnoseResult, Error>) -> Void) {
+        getJSON("/api/diagnose", as: DiagnoseResult.self, completion: completion)
+    }
+
     func fiveGAction(_ action: String, arg: String? = nil,
                      completion: @escaping (Result<String, Error>) -> Void) {
         var body: [String: Any] = ["action": action]

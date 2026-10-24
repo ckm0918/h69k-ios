@@ -330,6 +330,32 @@ struct APIEnvelope<T: Codable>: Codable {
     func unwrap() -> T? { data ?? result ?? value }
 }
 
+// MARK: - 路由器体检报告 (v1.4)
+struct DiagnoseItem: Codable, Identifiable {
+    let id: String
+    var name: String
+    var status: String      // ok | warn | error
+    var detail: String
+    var advice: String
+}
+
+struct DiagnoseSuggestion: Codable, Identifiable {
+    var level: String       // warn | error
+    var title: String
+    var desc: String
+    var action: String
+    var id: String { title + desc }
+}
+
+struct DiagnoseResult: Codable {
+    var ok: Bool?
+    var ts: Int?
+    var score: Int?
+    var summary: String?
+    var items: [DiagnoseItem]?
+    var suggestions: [DiagnoseSuggestion]?
+}
+
 struct Aria2Envelope: Codable {
     let result: [String: JSONValue]?
     let error: Aria2Error?

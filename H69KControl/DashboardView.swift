@@ -26,6 +26,8 @@ struct DashboardView: View {
                             .padding(.top, 40)
                     } else if let s = status {
                         heroBanner(s)
+                        SectionLabel(text: "路由器体检")
+                        healthEntryCard(s)
                         SectionLabel(text: "网络状态")
                         networkCard(s)
                         SectionLabel(text: "实时流量")
@@ -65,6 +67,53 @@ struct DashboardView: View {
         .sheet(isPresented: $showSettingsSheet) { SettingsView() }
         .onAppear { startTimer() }
         .onDisappear { timer?.invalidate() }
+    }
+
+    // MARK: 体检入口
+    private func healthEntryCard(_ s: SystemStatus) -> some View {
+        let hint = healthHint(s)
+        let color = hint == 0 ? AppTheme.good : (hint == 1 ? AppTheme.warn : AppTheme.danger)
+        let text = hint == 0 ? "状态良好" : (hint == 1 ? "建议关注" : "需要处理")
+        return NavigationLink(destination: HealthView()) {
+            CardView {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle().fill(color.opacity(0.15)).frame(width: 46, height: 46)
+                        Image(systemName: hint == 0 ? "stethoscope" : (hint == 1 ? "waveform.path.ecg" : "exclamationmark.octagon"))
+                            .font(.system(size: 20))
+                            .foregroundColor(color)
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("路由器体检")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(AppTheme.textPrimary)
+                        Text("全面检测 20+ 项 · 自动生成优化报告")
+                            .font(.system(size: 11))
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+                    Spacer()
+                    HStack(spacing: 4) {
+                        Text(text)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(color)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11))
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private func healthHint(_ s: SystemStatus) -> Int {
+        var hint = 0
+        if let ts = s.tempC, let t = ts.max(), t > 80 { hint = 2 }
+        else if let ts = s.tempC, let t = ts.max(), t > 70 { hint = 1 }
+        if let l = s.load?.first.flatMap(Double.init), l > 2.5 { hint = max(hint, 1) }
+        if let l = s.load?.first.flatMap(Double.init), l > 4.0 { hint = max(hint, 2) }
+        return hint
     }
 
     // MARK: 数据获取
