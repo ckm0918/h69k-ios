@@ -288,7 +288,7 @@ struct ChatDetailView: View {
                                     .foregroundColor(.white)
                             }
                             .frame(width: 40, height: 36)
-                            .background(Capsule().fill(input.isEmpty ? AppTheme.textSecondary.opacity(0.3) : AppTheme.gradient))
+                            .background(sendButtonBackground)
                         }
                         .disabled(sending || input.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
@@ -318,6 +318,15 @@ struct ChatDetailView: View {
             registerKeyboard()
             markThreadRead()
             scrollToBottom()
+        }
+    }
+
+    // 发送按钮背景（禁用时灰色、可用时渐变；iOS14 无 AnyShapeStyle 需分支构建）
+    @ViewBuilder private var sendButtonBackground: some View {
+        if input.isEmpty {
+            Capsule().fill(AppTheme.textSecondary.opacity(0.3))
+        } else {
+            Capsule().fill(AppTheme.gradient)
         }
     }
 
