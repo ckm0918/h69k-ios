@@ -159,6 +159,19 @@ struct Sparkline: View {
     }
 }
 
+// MARK: - 状态小圆点
+struct StatusDot: View {
+    let color: Color
+    var size: CGFloat = 8
+
+    var body: some View {
+        Circle()
+            .fill(color)
+            .frame(width: size, height: size)
+            .shadow(color: color.opacity(0.6), radius: 3)
+    }
+}
+
 // MARK: - 分区标题（iOS 设置风格）
 struct SectionLabel: View {
     let text: String
