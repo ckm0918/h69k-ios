@@ -52,7 +52,7 @@ struct ControlView: View {
                 }
             }
         }
-        APIClient.shared.action("fan-control", arg: "status") { r in
+        APIClient.shared.action("fan_status") { r in
             DispatchQueue.main.async {
                 if case .success(let txt) = r { fanInfo = txt }
             }
