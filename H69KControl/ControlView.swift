@@ -46,7 +46,8 @@ struct ControlView: View {
             DispatchQueue.main.async {
                 if case .success(let s) = r {
                     mode = s.netMode ?? "auto"
-                    wifiOn = s.netConf?["wifi"] == "on"
+                    // v1.4: WiFi 开关控制的是无线接口，状态读独立字段 wifi_state
+                    wifiOn = s.wifiState == "on"
                     dataOn = s.netConf?["data"] == "on"
                 }
             }

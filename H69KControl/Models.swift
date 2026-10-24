@@ -14,6 +14,7 @@ struct SystemStatus: Codable {
     var net: [String: NetIf]?
     var netConf: [String: String]?
     var netMode: String?
+    var wifiState: String?
     var wanIp: String?
     var wwanIp: String?
     var modemStatus: String?
@@ -27,6 +28,7 @@ struct SystemStatus: Codable {
         case uptimeS = "uptime_s"
         case netConf = "net_conf"
         case netMode = "net_mode"
+        case wifiState = "wifi_state"
         case wanIp = "wan_ip"
         case wwanIp = "wwan_ip"
         case modemStatus = "modem_status"
@@ -128,6 +130,11 @@ struct FiveGStatus: Codable {
     var cereg: String?
     var registered: Bool?
     var wwanIp: String?
+
+    enum CodingKeys: String, CodingKey {
+        case raw, signal, net, cereg, registered
+        case wwanIp = "wwan_ip"
+    }
 
     struct SignalInfo: Codable {
         var csq: Int?

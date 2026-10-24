@@ -15,8 +15,8 @@ targets:
       path: H69KControl/Info.plist
       properties:
         CFBundleDisplayName: H69K 控制台
-        CFBundleShortVersionString: "1.3.0"
-        CFBundleVersion: "4"
+        CFBundleShortVersionString: "1.4.0"
+        CFBundleVersion: "5"
         UILaunchScreen: {}
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
@@ -28,8 +28,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.h69k.control
-        MARKETING_VERSION: "1.3.0"
-        CURRENT_PROJECT_VERSION: "4"
+        MARKETING_VERSION: "1.4.0"
+        CURRENT_PROJECT_VERSION: "5"
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.0"
         CODE_SIGNING_ALLOWED: NO
