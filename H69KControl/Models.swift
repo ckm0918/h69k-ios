@@ -246,6 +246,72 @@ struct AdGuardStatus: Codable {
     }
 }
 
+// MARK: - 接入设备 (v2.2)
+struct DeviceItem: Codable, Identifiable {
+    var mac: String
+    var ip: String
+    var name: String
+    var online: Bool
+
+    var id: String { mac }
+}
+
+struct DevicesList: Codable {
+    var ok: Bool?
+    var total: Int?
+    var onlineCount: Int?
+    var devices: [DeviceItem]?
+
+    enum CodingKeys: String, CodingKey {
+        case ok, total, devices
+        case onlineCount = "online_count"
+    }
+}
+
+// MARK: - OpenClash 实时流量 (v2.2)
+struct ClashTraffic: Codable {
+    var ok: Bool?
+    var running: Bool?
+    var download: Int64?
+    var upload: Int64?
+    var error: String?
+}
+
+// MARK: - OpenClash 节点测速 (v2.2)
+struct ClashDelayResult: Codable {
+    var name: String
+    var delay: Int?
+}
+
+struct ClashDelay: Codable {
+    var ok: Bool?
+    var running: Bool?
+    var results: [ClashDelayResult]?
+    var tested: Int?
+    var okCount: Int?
+    var error: String?
+
+    enum CodingKeys: String, CodingKey {
+        case ok, running, results, tested, error
+        case okCount = "ok_count"
+    }
+}
+
+// MARK: - AdGuard 统计 (v2.2)
+struct AdGuardStats: Codable {
+    var ok: Bool?
+    var running: Bool?
+    var queries: Int?
+    var blocked: Int?
+    var blockedPercent: Double?
+    var window: String?
+
+    enum CodingKeys: String, CodingKey {
+        case ok, running, queries, blocked, window
+        case blockedPercent = "blocked_percent"
+    }
+}
+
 // MARK: - 通用 API 响应包装
 struct APIEnvelope<T: Codable>: Codable {
     let ok: Bool?

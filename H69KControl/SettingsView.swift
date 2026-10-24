@@ -70,6 +70,16 @@ struct ServerSectionView: View {
                             .foregroundColor(r.0 ? AppTheme.good : AppTheme.danger)
                     }
                 }
+                // 局域网权限引导（iOS 14 首次访问局域网需要授权）
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: "hand.raised.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppTheme.warn)
+                    Text("连接失败时，请先在「设置 → 隐私 → 本地网络」中允许本 App 访问局域网")
+                        .font(.system(size: 11))
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+                .padding(.top, 2)
             }
         }
         .onAppear {
@@ -170,17 +180,20 @@ struct QuickSettingsView: View {
     }
 
     private func loadSwitchState() {
-        APIClient.shared.wifiStatus { r in
-            DispatchQueue.main.async {
-                if case .success(let w) = r {
-                    wifiOn = !(w.radios?.first?.disabled ?? false)
-                }
-            }
-        }
         APIClient.shared.status { r in
             DispatchQueue.main.async {
                 if case .success(let s) = r {
+                    // 从 net_conf 真实回读 WiFi / 5G 数据开关
+                    wifiOn = s.netConf?["wifi"] != "off"
+                    dataOn = s.netConf?["data"] != "off"
                     netModeIdx = s.netMode == "lock-wan" ? 1 : (s.netMode == "lock-5g" ? 2 : 0)
+                }
+            }
+        }
+        APIClient.shared.wifiStatus { r in
+            DispatchQueue.main.async {
+                if case .success(let w) = r {
+                    wifiOn = !(w.radios?.first?.disabled ?? true)
                 }
             }
         }
@@ -445,10 +458,10 @@ struct AboutSectionView: View {
         CardView {
             VStack(alignment: .leading, spacing: 8) {
                 CardTitle(icon: "info.circle", title: "关于")
-                infoRow("版本", "1.1.0")
+                infoRow("版本", "1.2.0")
                 infoRow("设备", "HINLINK OPC-H69K")
                 infoRow("接口", "本地 JSON API 网关 :8788")
-                infoRow("网关", "v2.1 · 5G / 短信 / WiFi / OpenClash / AdGuard")
+                infoRow("网关", "v2.2 · 5G / 短信 / WiFi / Clash / AdGuard / 设备")
             }
         }
     }

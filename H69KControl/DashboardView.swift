@@ -3,11 +3,13 @@ import SwiftUI
 // MARK: - 总览页（高端仪表风格）
 struct DashboardView: View {
     @State private var status: SystemStatus?
+    @State private var devices: DevicesList?
     @State private var error: String?
     @State private var loading = false
     @State private var rxHistory: [Double] = []
     @State private var txHistory: [Double] = []
     @State private var timer: Timer?
+    @State private var showSettingsSheet = false
 
     var body: some View {
         ZStack {
@@ -18,12 +20,13 @@ struct DashboardView: View {
                         ProgressView("连接 H69K…")
                             .padding(.top, 60)
                     } else if let err = error, status == nil {
-                        ErrorCard(message: err)
+                        ErrorCard(message: err) { showSettingsSheet = true }
                     } else if let s = status {
                         headerCard(s)
                         gaugesRow(s)
                         networkCard(s)
                         modeCard(s)
+                        if let d = devices { devicesCard(d) }
                         if !(s.modemStatus ?? "").isEmpty { modemCard(s) }
                     }
                 }
@@ -43,6 +46,7 @@ struct DashboardView: View {
             Button(action: refresh) { Image(systemName: "arrow.clockwise") }
                 .disabled(loading)
         })
+        .sheet(isPresented: $showSettingsSheet) { SettingsView() }
         .onAppear { startTimer() }
         .onDisappear { timer?.invalidate() }
     }
@@ -63,6 +67,13 @@ struct DashboardView: View {
                 }
             }
         }
+        APIClient.shared.devices { r in
+            DispatchQueue.main.async {
+                if case .success(let d) = r {
+                    devices = d
+                }
+            }
+        }
     }
 
     private func startTimer() {
@@ -75,20 +86,23 @@ struct DashboardView: View {
     private func pushTraffic(_ s: SystemStatus) {
         let rx = Double(s.net?["eth0"]?.rxB ?? s.net?["br-lan"]?.rxB ?? 0)
         let tx = Double(s.net?["eth0"]?.txB ?? s.net?["br-lan"]?.txB ?? 0)
-        if let last = rxHistory.last {
-            rxHistory.append(max(rx - last, 0))
+        // 用上一轮绝对字节数做差值（不是差值数组的末项）
+        let lastRxAbs = lastRx
+        let lastTxAbs = lastTx
+        if lastRxAbs > 0 {
+            rxHistory.append(max(rx - lastRxAbs, 0))
         } else {
             rxHistory.append(0)
         }
-        if let last = txHistory.last {
-            txHistory.append(max(tx - last, 0))
+        if lastTxAbs > 0 {
+            txHistory.append(max(tx - lastTxAbs, 0))
         } else {
             txHistory.append(0)
         }
         if rxHistory.count > 30 { rxHistory.removeFirst(rxHistory.count - 30) }
         if txHistory.count > 30 { txHistory.removeFirst(txHistory.count - 30) }
-        // 保存原始值供下一次差值计算（用内部存储）
-        lastRx = rx; lastTx = tx
+        lastRx = rx
+        lastTx = tx
     }
 
     @State private var lastRx: Double = 0
@@ -255,6 +269,33 @@ struct DashboardView: View {
                         .fill(on ? color.opacity(0.14) : Color.white.opacity(0.05)))
     }
 
+    // MARK: 接入设备
+    private func devicesCard(_ d: DevicesList) -> some View {
+        CardView {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    CardTitle(icon: "desktopcomputer", title: "接入设备", iconColor: AppTheme.info)
+                    Spacer()
+                    HStack(spacing: 5) {
+                        StatusDot(color: AppTheme.good)
+                        Text("\(d.onlineCount ?? 0)/\(d.total ?? 0) 在线")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(AppTheme.textSecondary)
+                    }
+                }
+                if let list = d.devices, !list.isEmpty {
+                    ForEach(list.prefix(10)) { dev in
+                        DeviceRowView(device: dev)
+                    }
+                } else {
+                    Text("暂无已知设备（上级路由分配 DHCP 时此处可能为空）")
+                        .font(.system(size: 12))
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+            }
+        }
+    }
+
     // MARK: 5G 信息
     private func modemCard(_ s: SystemStatus) -> some View {
         CardView {
@@ -272,6 +313,8 @@ struct DashboardView: View {
 // MARK: - 错误卡片
 struct ErrorCard: View {
     let message: String
+    var onSettings: (() -> Void)? = nil
+
     var body: some View {
         CardView {
             HStack(alignment: .top, spacing: 12) {
@@ -281,12 +324,59 @@ struct ErrorCard: View {
                     Text("无法连接 H69K").font(.system(size: 15, weight: .bold))
                         .foregroundColor(AppTheme.textPrimary)
                     Text(message).font(.system(size: 12)).foregroundColor(AppTheme.textSecondary)
-                    Button("打开设置") { }
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(AppTheme.primary)
+                    Button(action: { onSettings?() }) {
+                        Text("打开设置")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(AppTheme.primary)
+                    }
                 }
                 Spacer()
             }
         }
+    }
+}
+
+// MARK: - 设备行
+struct DeviceRowView: View {
+    let device: DeviceItem
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill(device.online ? AppTheme.good.opacity(0.15) : Color.white.opacity(0.06))
+                    .frame(width: 34, height: 34)
+                Image(systemName: deviceIcon)
+                    .font(.system(size: 15))
+                    .foregroundColor(device.online ? AppTheme.good : AppTheme.textSecondary)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(device.name.isEmpty ? device.ip : device.name)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(AppTheme.textPrimary)
+                    .lineLimit(1)
+                Text(device.ip)
+                    .font(AppTheme.mono(10))
+                    .foregroundColor(AppTheme.textSecondary)
+            }
+            Spacer()
+            HStack(spacing: 5) {
+                StatusDot(color: device.online ? AppTheme.good : AppTheme.textSecondary.opacity(0.4))
+                Text(device.online ? "在线" : "离线")
+                    .font(.system(size: 11))
+                    .foregroundColor(device.online ? AppTheme.good : AppTheme.textSecondary)
+            }
+        }
+        .padding(.vertical, 3)
+    }
+
+    private var deviceIcon: String {
+        if device.name.lowercased().contains("iphone") || device.name.lowercased().contains("ipad") {
+            return "iphone"
+        }
+        if device.name.lowercased().contains("xiaomi") || device.name.lowercased().contains("mi ") {
+            return "iphone"
+        }
+        return "desktopcomputer"
     }
 }

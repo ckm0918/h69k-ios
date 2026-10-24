@@ -305,6 +305,26 @@ final class APIClient {
     func adguardAction(_ action: String, completion: @escaping (Result<String, Error>) -> Void) {
         postAction("/api/adguard", body: ["action": action], completion: completion)
     }
+
+    // MARK: 接入设备 (v2.2)
+    func devices(completion: @escaping (Result<DevicesList, Error>) -> Void) {
+        getJSON("/api/devices", as: DevicesList.self, completion: completion)
+    }
+
+    // MARK: OpenClash 实时流量 (v2.2)
+    func clashTraffic(completion: @escaping (Result<ClashTraffic, Error>) -> Void) {
+        getJSON("/api/clash/traffic", as: ClashTraffic.self, completion: completion)
+    }
+
+    // MARK: OpenClash 节点测速 (v2.2)
+    func clashDelay(completion: @escaping (Result<ClashDelay, Error>) -> Void) {
+        getJSON("/api/clash/delay", as: ClashDelay.self, completion: completion)
+    }
+
+    // MARK: AdGuard 统计 (v2.2)
+    func adguardStats(completion: @escaping (Result<AdGuardStats, Error>) -> Void) {
+        getJSON("/api/adguard/stats", as: AdGuardStats.self, completion: completion)
+    }
 }
 
 // MARK: - 5G 响应包装
