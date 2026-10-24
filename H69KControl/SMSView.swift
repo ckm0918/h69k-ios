@@ -22,6 +22,24 @@ struct SMSView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 4)
                     }
+                    SectionLabel(text: "收件箱")
+                    if !items.isEmpty {
+                        CardView(padding: 12) {
+                            HStack {
+                                StatusRow(icon: "envelope", title: "短信总数",
+                                          value: "\(items.count) 条", iconColor: AppTheme.info)
+                                Spacer()
+                                let unread = items.filter { !$0.read }.count
+                                if unread > 0 {
+                                    Text("\(unread) 条未读")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(AppTheme.warn)
+                                        .padding(.horizontal, 10).padding(.vertical, 4)
+                                        .background(Capsule().fill(AppTheme.warn.opacity(0.14)))
+                                }
+                            }
+                        }
+                    }
                     if items.isEmpty && !loading {
                         VStack(spacing: 12) {
                             Image(systemName: "message")

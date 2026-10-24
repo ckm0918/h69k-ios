@@ -26,28 +26,43 @@ struct FiveGView: View {
                     }
 
                     // 5G 主状态卡片
+                    SectionLabel(text: "5G 蜂窝网络")
                     CardView {
                         VStack(spacing: 14) {
-                            CardTitle(icon: "antenna.radiowaves.left.and.right", title: "5G 蜂窝网络")
+                            HStack {
+                                CardTitle(icon: "antenna.radiowaves.left.and.right", title: "信号与连接")
+                                Spacer()
+                                HStack(spacing: 6) {
+                                    StatusDot(color: fiveG?.registered == true ? AppTheme.good : AppTheme.danger)
+                                    Text(fiveG?.registered == true ? "已注册" : "未注册")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundColor(fiveG?.registered == true ? AppTheme.good : AppTheme.danger)
+                                }
+                            }
                             HStack(spacing: 18) {
                                 if let sig = fiveG?.signal {
-                                    GaugeRing(
-                                        value: Double(min(max(sig.csq ?? 0, 0), 31)) / 31.0,
-                                        size: 96, lineWidth: 10,
-                                        color: sig.levelColor,
-                                        centerText: "\(sig.rssiDbm ?? 0)",
-                                        subText: "dBm")
+                                    VStack(spacing: 8) {
+                                        SignalBars(level: signalLevel(sig.csq ?? 0),
+                                                   size: 30, active: sig.levelColor)
+                                        Text("\(sig.rssiDbm ?? 0) dBm")
+                                            .font(AppTheme.mono(16))
+                                            .foregroundColor(sig.levelColor)
+                                        Text(sig.levelText)
+                                            .font(.system(size: 11))
+                                            .foregroundColor(AppTheme.textSecondary)
+                                    }
                                 } else {
-                                    GaugeRing(value: 0, size: 96, centerText: "--", subText: "信号")
+                                    VStack(spacing: 8) {
+                                        SignalBars(level: 0, size: 30)
+                                        Text("-- dBm").font(AppTheme.mono(16)).foregroundColor(AppTheme.textSecondary)
+                                        Text("未获取").font(.system(size: 11)).foregroundColor(AppTheme.textSecondary)
+                                    }
                                 }
                                 VStack(alignment: .leading, spacing: 6) {
-                                    statusRow("信号等级", fiveG?.signal?.levelText ?? "未获取",
-                                              color: fiveG?.signal?.levelColor ?? AppTheme.textSecondary)
                                     statusRow("网络模式", fiveG?.net?.mode ?? "--")
-                                    statusRow("注册状态",
-                                              fiveG?.registered == true ? "已注册" : "未注册",
-                                              color: fiveG?.registered == true ? AppTheme.good : AppTheme.danger)
+                                    statusRow("注册状态", fiveG?.registered == true ? "已注册" : "未注册")
                                     statusRow("拨号 IP", fiveG?.wwanIp ?? "--")
+                                    statusRow("信号质量", fiveG?.signal?.csq.map { "CSQ \($0)/31" } ?? "--")
                                 }
                                 Spacer()
                             }
@@ -62,6 +77,7 @@ struct FiveGView: View {
                     }
 
                     // WiFi 频段卡片
+                    SectionLabel(text: "WiFi 频段与开关")
                     CardView {
                         VStack(spacing: 12) {
                             CardTitle(icon: "wifi", title: "WiFi 频段与开关")
@@ -105,6 +121,7 @@ struct FiveGView: View {
                     }
 
                     // 网络模式卡片
+                    SectionLabel(text: "5G 网络模式")
                     CardView {
                         VStack(alignment: .leading, spacing: 12) {
                             CardTitle(icon: "arrow.triangle.branch", title: "5G 网络模式")
@@ -167,6 +184,15 @@ struct FiveGView: View {
     }
 
     @State private var modeSelection: Int = 0
+
+    private func signalLevel(_ csq: Int) -> Int {
+        if csq >= 25 { return 5 }
+        if csq >= 20 { return 4 }
+        if csq >= 14 { return 3 }
+        if csq >= 8 { return 2 }
+        if csq >= 3 { return 1 }
+        return 0
+    }
 
     private func statusRow(_ k: String, _ v: String, color: Color = AppTheme.textPrimary) -> some View {
         HStack(spacing: 8) {

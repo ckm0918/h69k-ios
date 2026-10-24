@@ -7,10 +7,15 @@ struct SettingsView: View {
             AppTheme.bg.edgesIgnoringSafeArea(.all)
             ScrollView {
                 VStack(spacing: 14) {
+                    SectionLabel(text: "连接配置")
                     ServerSectionView()
+                    SectionLabel(text: "常用设置")
                     QuickSettingsView()
+                    SectionLabel(text: "散热风扇")
                     FanSectionView()
+                    SectionLabel(text: "外观")
                     AppearanceSectionView()
+                    SectionLabel(text: "关于")
                     AboutSectionView()
                 }
                 .padding(.horizontal, 16)
@@ -461,7 +466,7 @@ struct AboutSectionView: View {
                 infoRow("版本", "1.3.0")
                 infoRow("设备", "HINLINK OPC-H69K")
                 infoRow("接口", "本地 JSON API 网关 :8788")
-                infoRow("网关", "v2.2 · 5G / 短信 / WiFi / Clash / AdGuard / 设备")
+                infoRow("网关", "v2.3 · 5G / 短信 / WiFi / Clash / AdGuard / 设备")
             }
         }
     }

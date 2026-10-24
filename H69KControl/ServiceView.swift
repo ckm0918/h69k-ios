@@ -33,6 +33,7 @@ struct ServiceView: View {
                     }
 
                     // OpenClash 卡片
+                    SectionLabel(text: "OpenClash 代理")
                     CardView {
                         VStack(spacing: 14) {
                             HStack {
@@ -152,6 +153,7 @@ struct ServiceView: View {
                     }
 
                     // AdGuard 卡片
+                    SectionLabel(text: "AdGuard Home")
                     CardView {
                         VStack(spacing: 14) {
                             HStack {

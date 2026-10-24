@@ -13,7 +13,10 @@ struct Aria2View: View {
             AppTheme.bg.edgesIgnoringSafeArea(.all)
             ScrollView {
                 VStack(spacing: 14) {
-                    if let g = global { globalBar(g) }
+                    if let g = global {
+                        SectionLabel(text: "全局统计")
+                        globalBar(g)
+                    }
                     if let e = error, tasks.isEmpty {
                         ErrorCard(message: e)
                     }
@@ -23,6 +26,8 @@ struct Aria2View: View {
                             Text("暂无下载任务").foregroundColor(AppTheme.textSecondary)
                         }
                         .padding(.top, 80)
+                    } else {
+                        SectionLabel(text: "下载任务")
                     }
                     ForEach(tasks) { task in
                         Aria2TaskCard(task: task, onChanged: refresh)
