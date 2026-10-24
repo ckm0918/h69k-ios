@@ -458,7 +458,7 @@ struct AboutSectionView: View {
         CardView {
             VStack(alignment: .leading, spacing: 8) {
                 CardTitle(icon: "info.circle", title: "关于")
-                infoRow("版本", "1.2.0")
+                infoRow("版本", "1.3.0")
                 infoRow("设备", "HINLINK OPC-H69K")
                 infoRow("接口", "本地 JSON API 网关 :8788")
                 infoRow("网关", "v2.2 · 5G / 短信 / WiFi / Clash / AdGuard / 设备")

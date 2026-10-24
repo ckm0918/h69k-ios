@@ -159,16 +159,132 @@ struct Sparkline: View {
     }
 }
 
-// MARK: - 状态小圆点
-struct StatusDot: View {
-    let color: Color
-    var size: CGFloat = 8
+// MARK: - 分区标题（iOS 设置风格）
+struct SectionLabel: View {
+    let text: String
 
     var body: some View {
-        Circle()
-            .fill(color)
-            .frame(width: size, height: size)
-            .shadow(color: color.opacity(0.6), radius: 3)
+        Text(text.uppercased())
+            .font(.system(size: 11, weight: .semibold))
+            .tracking(1.2)
+            .foregroundColor(AppTheme.textSecondary.opacity(0.85))
+            .padding(.leading, 4)
+            .padding(.top, 6)
+            .padding(.bottom, 2)
+    }
+}
+
+// MARK: - 信号强度条（蜂窝风格）
+struct SignalBars: View {
+    let level: Int    // 0...5
+    var size: CGFloat = 22
+    var active: Color = AppTheme.good
+    var inactive: Color = Color.white.opacity(0.15)
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 2) {
+            ForEach(0..<5, id: \.self) { i in
+                RoundedRectangle(cornerRadius: 1.5)
+                    .fill(i < level ? active : inactive)
+                    .frame(width: size * 0.16, height: size * (0.25 + 0.17 * CGFloat(i)))
+            }
+        }
+        .frame(height: size)
+    }
+}
+
+// MARK: - 快捷开关按钮（路由器 App 风格）
+struct QuickToggle: View {
+    let icon: String
+    let label: String
+    let on: Bool
+    let accent: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 7) {
+                ZStack {
+                    Circle()
+                        .fill(on ? accent.opacity(0.18) : Color.white.opacity(0.07))
+                        .frame(width: 46, height: 46)
+                    Image(systemName: icon)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(on ? accent : AppTheme.textSecondary)
+                }
+                Text(label)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(on ? AppTheme.textPrimary : AppTheme.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
+// MARK: - 大数值指标
+struct BigMetric: View {
+    let icon: String
+    let title: String
+    let value: String
+    var unit: String = ""
+    var color: Color = AppTheme.primary
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(color)
+                Text(title)
+                    .font(.system(size: 11))
+                    .foregroundColor(AppTheme.textSecondary)
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(value)
+                    .font(AppTheme.mono(20))
+                    .foregroundColor(AppTheme.textPrimary)
+                if !unit.isEmpty {
+                    Text(unit)
+                        .font(.system(size: 11))
+                        .foregroundColor(AppTheme.textSecondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+// MARK: - 状态行（图标 + 文本 + 可选值）
+struct StatusRow: View {
+    let icon: String
+    let title: String
+    let value: String
+    var valueColor: Color = AppTheme.textPrimary
+    var iconColor: Color = AppTheme.primary
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(iconColor)
+                .frame(width: 20)
+            Text(title)
+                .font(.system(size: 13))
+                .foregroundColor(AppTheme.textSecondary)
+            Spacer()
+            Text(value)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(valueColor)
+                .lineLimit(1)
+        }
+        .padding(.vertical, 3)
+    }
+}
+
+// MARK: - 底部安全区间距
+extension View {
+    func cardSectionSpacing() -> some View {
+        self.padding(.top, 12)
     }
 }
 

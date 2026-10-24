@@ -60,6 +60,7 @@ final class APIClient {
 
     // MARK: 基础请求
     private func request(path: String, method: String = "GET", body: [String: Any]? = nil,
+                         timeout: TimeInterval = 10,
                          completion: @escaping (Result<Data, Error>) -> Void) {
         let s = AppSettings.shared
         guard s.isValid else {
@@ -73,7 +74,7 @@ final class APIClient {
         var req = URLRequest(url: url)
         req.httpMethod = method
         req.setValue("Bearer " + s.token, forHTTPHeaderField: "Authorization")
-        req.timeoutInterval = 25
+        req.timeoutInterval = timeout
         if let body = body {
             req.httpMethod = "POST"
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -318,7 +319,14 @@ final class APIClient {
 
     // MARK: OpenClash 节点测速 (v2.2)
     func clashDelay(completion: @escaping (Result<ClashDelay, Error>) -> Void) {
-        getJSON("/api/clash/delay", as: ClashDelay.self, completion: completion)
+        request(path: "/api/clash/delay", timeout: 35) { r in
+            switch r {
+            case .success(let data):
+                completion(self.decode(data, as: ClashDelay.self))
+            case .failure(let e):
+                completion(.failure(e))
+            }
+        }
     }
 
     // MARK: AdGuard 统计 (v2.2)

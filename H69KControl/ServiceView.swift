@@ -13,6 +13,7 @@ struct ServiceView: View {
     @State private var errorMsg: String?
     @State private var timer: Timer?
     @State private var trafficTimer: Timer?
+    @State private var statsTimer: Timer?
     @State private var downHistory: [Double] = []
     @State private var upHistory: [Double] = []
 
@@ -230,7 +231,7 @@ struct ServiceView: View {
         }
         .navigationBarTitle("服务", displayMode: .large)
         .onAppear { load(); startTimer() }
-        .onDisappear { timer?.invalidate(); trafficTimer?.invalidate() }
+        .onDisappear { timer?.invalidate(); trafficTimer?.invalidate(); statsTimer?.invalidate() }
     }
 
     private func load() {
@@ -311,6 +312,8 @@ struct ServiceView: View {
         timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { _ in load() }
         trafficTimer?.invalidate()
         trafficTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { _ in loadTraffic() }
+        statsTimer?.invalidate()
+        statsTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { _ in loadStats() }
     }
 
     private func toggleClash() {

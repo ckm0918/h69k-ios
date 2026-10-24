@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - 总览页（高端仪表风格）
+// MARK: - 总览页（专业仪表盘，参考 ASUS Router / 小米路由风格）
 struct DashboardView: View {
     @State private var status: SystemStatus?
     @State private var devices: DevicesList?
@@ -10,24 +10,38 @@ struct DashboardView: View {
     @State private var txHistory: [Double] = []
     @State private var timer: Timer?
     @State private var showSettingsSheet = false
+    @State private var acting = false
 
     var body: some View {
         ZStack {
             AppTheme.bg.edgesIgnoringSafeArea(.all)
             ScrollView {
-                VStack(spacing: 14) {
+                VStack(spacing: 12) {
                     if loading && status == nil {
                         ProgressView("连接 H69K…")
-                            .padding(.top, 60)
+                            .padding(.top, 80)
+                            .foregroundColor(AppTheme.textSecondary)
                     } else if let err = error, status == nil {
                         ErrorCard(message: err) { showSettingsSheet = true }
+                            .padding(.top, 40)
                     } else if let s = status {
-                        headerCard(s)
-                        gaugesRow(s)
+                        heroBanner(s)
+                        SectionLabel(text: "网络状态")
                         networkCard(s)
-                        modeCard(s)
-                        if let d = devices { devicesCard(d) }
-                        if !(s.modemStatus ?? "").isEmpty { modemCard(s) }
+                        SectionLabel(text: "实时流量")
+                        trafficCard(s)
+                        SectionLabel(text: "快捷控制")
+                        quickControlCard(s)
+                        if let d = devices {
+                            SectionLabel(text: "接入设备")
+                            devicesCard(d)
+                        }
+                        SectionLabel(text: "系统资源")
+                        gaugesRow(s)
+                        if !(s.modemStatus ?? "").isEmpty {
+                            SectionLabel(text: "5G 模组日志")
+                            modemCard(s)
+                        }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -35,16 +49,18 @@ struct DashboardView: View {
                 .padding(.bottom, 24)
             }
         }
-        .navigationBarTitle("总览", displayMode: .large)
-        .navigationBarItems(trailing: HStack(spacing: 12) {
+        .navigationBarTitle("H69K", displayMode: .large)
+        .navigationBarItems(trailing: HStack(spacing: 14) {
             if let s = status {
                 HStack(spacing: 5) {
                     StatusDot(color: AppTheme.good)
-                    Text(Fmt.uptime(s.uptimeS ?? 0)).foregroundColor(AppTheme.textSecondary)
+                    Text(Fmt.uptime(s.uptimeS ?? 0))
+                        .font(AppTheme.mono(10))
+                        .foregroundColor(AppTheme.textSecondary)
                 }
             }
             Button(action: refresh) { Image(systemName: "arrow.clockwise") }
-                .disabled(loading)
+                .disabled(loading || acting)
         })
         .sheet(isPresented: $showSettingsSheet) { SettingsView() }
         .onAppear { startTimer() }
@@ -78,7 +94,7 @@ struct DashboardView: View {
 
     private func startTimer() {
         refresh()
-        timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { _ in
             refresh()
         }
     }
@@ -86,21 +102,14 @@ struct DashboardView: View {
     private func pushTraffic(_ s: SystemStatus) {
         let rx = Double(s.net?["eth0"]?.rxB ?? s.net?["br-lan"]?.rxB ?? 0)
         let tx = Double(s.net?["eth0"]?.txB ?? s.net?["br-lan"]?.txB ?? 0)
-        // 用上一轮绝对字节数做差值（不是差值数组的末项）
         let lastRxAbs = lastRx
         let lastTxAbs = lastTx
-        if lastRxAbs > 0 {
-            rxHistory.append(max(rx - lastRxAbs, 0))
-        } else {
-            rxHistory.append(0)
-        }
-        if lastTxAbs > 0 {
-            txHistory.append(max(tx - lastTxAbs, 0))
-        } else {
-            txHistory.append(0)
-        }
-        if rxHistory.count > 30 { rxHistory.removeFirst(rxHistory.count - 30) }
-        if txHistory.count > 30 { txHistory.removeFirst(txHistory.count - 30) }
+        if lastRxAbs > 0 { rxHistory.append(max(rx - lastRxAbs, 0)) }
+        else { rxHistory.append(0) }
+        if lastTxAbs > 0 { txHistory.append(max(tx - lastTxAbs, 0)) }
+        else { txHistory.append(0) }
+        if rxHistory.count > 40 { rxHistory.removeFirst(rxHistory.count - 40) }
+        if txHistory.count > 40 { txHistory.removeFirst(txHistory.count - 40) }
         lastRx = rx
         lastTx = tx
     }
@@ -108,37 +117,165 @@ struct DashboardView: View {
     @State private var lastRx: Double = 0
     @State private var lastTx: Double = 0
 
-    // MARK: 顶栏
-    private func headerCard(_ s: SystemStatus) -> some View {
-        CardView {
-            HStack(spacing: 14) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(AppTheme.gradient)
-                        .frame(width: 52, height: 52)
-                    Image(systemName: "router.fill")
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundColor(.white)
-                }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("HINLINK OPC-H69K")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(AppTheme.textPrimary)
-                    HStack(spacing: 8) {
-                        Text(s.wanIp ?? "--").font(AppTheme.mono(11)).foregroundColor(AppTheme.textSecondary)
-                        StatusDot(color: AppTheme.good)
-                    }
+    // MARK: 顶部渐变横幅
+    private func heroBanner(_ s: SystemStatus) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                HStack(spacing: 8) {
+                    StatusDot(color: AppTheme.good, size: 9)
+                    Text("在线")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.85))
                 }
                 Spacer()
-                VStack(alignment: .trailing, spacing: 3) {
-                    Text(s.netMode == "lock-5g" ? "仅 5G" : s.netMode == "lock-wan" ? "仅宽带" : "宽带优先")
-                        .font(.system(size: 11, weight: .semibold))
-                        .padding(.horizontal, 10).padding(.vertical, 4)
-                        .background(Capsule().fill(AppTheme.gradientSoft))
-                        .foregroundColor(AppTheme.textPrimary)
-                    Text("5G \(s.wwanIp ?? "--")")
-                        .font(AppTheme.mono(10)).foregroundColor(AppTheme.textSecondary)
+                Text(s.netMode == "lock-5g" ? "仅 5G" : s.netMode == "lock-wan" ? "仅宽带" : "宽带优先")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.9))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(Color.white.opacity(0.16)))
+            }
+            Text("HINLINK OPC-H69K")
+                .font(.system(size: 22, weight: .bold))
+                .foregroundColor(.white)
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("出口 IP")
+                        .font(.system(size: 10))
+                        .foregroundColor(.white.opacity(0.65))
+                    Text(s.wanIp ?? "--")
+                        .font(AppTheme.mono(15))
+                        .foregroundColor(.white)
                 }
+                Divider().frame(height: 28).background(Color.white.opacity(0.25))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("5G IP")
+                        .font(.system(size: 10))
+                        .foregroundColor(.white.opacity(0.65))
+                    Text(s.wwanIp ?? "--")
+                        .font(AppTheme.mono(15))
+                        .foregroundColor(.white)
+                }
+                Spacer()
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color.white.opacity(0.14))
+                        .frame(width: 58, height: 58)
+                    Image(systemName: "router.fill")
+                        .font(.system(size: 26, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+            }
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(
+                    LinearGradient(gradient: Gradient(colors: [
+                        Color(red: 0.24, green: 0.30, blue: 0.62),
+                        AppTheme.accent.opacity(0.75)
+                    ]), startPoint: .topLeading, endPoint: .bottomTrailing)
+                )
+        )
+    }
+
+    // MARK: 网络状态卡
+    private func networkCard(_ s: SystemStatus) -> some View {
+        CardView {
+            VStack(spacing: 10) {
+                HStack(spacing: 8) {
+                    modePill(name: "宽带", on: s.netConf?["wifi"] == "on", color: AppTheme.good, icon: "wifi")
+                    modePill(name: "5G 数据", on: s.netConf?["data"] == "on", color: AppTheme.cyan,
+                             icon: "antenna.radiowaves.left.and.right")
+                    Spacer()
+                }
+                Divider().background(AppTheme.cardBorder)
+                StatusRow(icon: "arrow.triangle.2.circlepath", title: "切换策略",
+                          value: s.netMode == "auto" ? "宽带优先，5G 备用"
+                                : s.netMode == "lock-wan" ? "已锁定宽带"
+                                : s.netMode == "lock-5g" ? "已锁定 5G"
+                                : s.netMode == "none" ? "全部关闭（断网）"
+                                : s.netMode ?? "--")
+                StatusRow(icon: "thermometer", title: "系统温度",
+                          value: s.tempC?.map { "\($0)°" }.joined(separator: " / ") ?? "--",
+                          iconColor: AppTheme.warn)
+                StatusRow(icon: "hourglass", title: "运行时间", value: Fmt.uptime(s.uptimeS ?? 0),
+                          iconColor: AppTheme.info)
+            }
+        }
+    }
+
+    private func modePill(name: String, on: Bool, color: Color, icon: String) -> some View {
+        HStack(spacing: 5) {
+            StatusDot(color: on ? color : AppTheme.textSecondary, size: 7)
+            Image(systemName: icon).font(.system(size: 11)).foregroundColor(on ? color : AppTheme.textSecondary)
+            Text(name).font(.system(size: 12, weight: .semibold))
+                .foregroundColor(on ? AppTheme.textPrimary : AppTheme.textSecondary)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 7)
+        .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(on ? color.opacity(0.14) : Color.white.opacity(0.05)))
+    }
+
+    // MARK: 实时流量卡
+    private func trafficCard(_ s: SystemStatus) -> some View {
+        CardView {
+            VStack(spacing: 12) {
+                HStack(spacing: 12) {
+                    BigMetric(icon: "arrow.down.circle.fill", title: "下载速率",
+                              value: Fmt.speed(Int64(rxHistory.last ?? 0)),
+                              color: AppTheme.good)
+                    Divider().frame(height: 34).background(AppTheme.cardBorder)
+                    BigMetric(icon: "arrow.up.circle.fill", title: "上传速率",
+                              value: Fmt.speed(Int64(txHistory.last ?? 0)),
+                              color: AppTheme.primary)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("实时曲线")
+                        .font(.system(size: 10))
+                        .foregroundColor(AppTheme.textSecondary)
+                    Sparkline(points: rxHistory, lineColor: AppTheme.good)
+                        .frame(height: 46)
+                }
+            }
+        }
+    }
+
+    // MARK: 快捷控制卡
+    private func quickControlCard(_ s: SystemStatus) -> some View {
+        CardView {
+            HStack(spacing: 6) {
+                QuickToggle(icon: "wifi", label: "WiFi",
+                            on: s.netConf?["wifi"] == "on", accent: AppTheme.good) {
+                    runAction("net_wifi", arg: s.netConf?["wifi"] == "on" ? "off" : "on")
+                }
+                QuickToggle(icon: "antenna.radiowaves.left.and.right", label: "5G 数据",
+                            on: s.netConf?["data"] == "on", accent: AppTheme.cyan) {
+                    runAction("net_data", arg: s.netConf?["data"] == "on" ? "off" : "on")
+                }
+                QuickToggle(icon: "fan.fill", label: "风扇自动",
+                            on: fanAuto, accent: AppTheme.warn) {
+                    runAction("fan_mode", arg: fanAuto ? "manual" : "auto")
+                }
+                QuickToggle(icon: "arrow.triangle.2.circlepath", label: "宽带优先",
+                            on: s.netMode == "auto", accent: AppTheme.info) {
+                    runAction("net_mode", arg: s.netMode == "auto" ? "lock-5g" : "auto")
+                }
+            }
+        }
+    }
+
+    private var fanAuto: Bool {
+        status?.netConf?["fan"] == "auto" || status?.netConf?["fan"] == nil
+    }
+
+    private func runAction(_ action: String, arg: String?) {
+        acting = true
+        APIClient.shared.action(action, arg: arg) { _ in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                acting = false
+                refresh()
             }
         }
     }
@@ -146,7 +283,6 @@ struct DashboardView: View {
     // MARK: 仪表行
     private func gaugesRow(_ s: SystemStatus) -> some View {
         HStack(spacing: 14) {
-            // CPU
             CardView(padding: 14) {
                 VStack(spacing: 10) {
                     CardTitle(icon: "cpu", title: "CPU")
@@ -164,7 +300,6 @@ struct DashboardView: View {
                 }
                 .frame(maxWidth: .infinity)
             }
-            // 内存
             CardView(padding: 14) {
                 VStack(spacing: 10) {
                     CardTitle(icon: "memorychip", title: "内存")
@@ -187,86 +322,10 @@ struct DashboardView: View {
                 .frame(maxWidth: .infinity)
             }
         }
-        .frame(height: 210)
     }
 
     private func cpuColor(_ v: Double) -> Color {
         v < 50 ? AppTheme.good : v < 80 ? AppTheme.warn : AppTheme.danger
-    }
-
-    // MARK: 网络流量
-    private func networkCard(_ s: SystemStatus) -> some View {
-        CardView {
-            VStack(spacing: 12) {
-                CardTitle(icon: "network", title: "网络流量", iconColor: AppTheme.cyan)
-                HStack {
-                    metricItem(icon: "arrow.down", title: "下行",
-                               value: rxHistory.last ?? 0,
-                               color: AppTheme.good)
-                    Divider().frame(height: 40)
-                    metricItem(icon: "arrow.up", title: "上行",
-                               value: txHistory.last ?? 0,
-                               color: AppTheme.primary)
-                }
-                .padding(.vertical, 2)
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("下行速率").font(.system(size: 10)).foregroundColor(AppTheme.textSecondary)
-                        Sparkline(points: rxHistory, lineColor: AppTheme.good)
-                            .frame(height: 38)
-                    }
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("上行速率").font(.system(size: 10)).foregroundColor(AppTheme.textSecondary)
-                        Sparkline(points: txHistory, lineColor: AppTheme.primary)
-                            .frame(height: 38)
-                    }
-                }
-                .frame(height: 54)
-            }
-        }
-    }
-
-    private func metricItem(icon: String, title: String, value: Double, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 4) {
-                Image(systemName: icon).font(.system(size: 11, weight: .semibold)).foregroundColor(color)
-                Text(title).font(.system(size: 11)).foregroundColor(AppTheme.textSecondary)
-            }
-            Text(Fmt.speed(Int64(value)))
-                .font(AppTheme.mono(16)).foregroundColor(AppTheme.textPrimary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // MARK: 网络模式
-    private func modeCard(_ s: SystemStatus) -> some View {
-        CardView {
-            VStack(alignment: .leading, spacing: 12) {
-                CardTitle(icon: "arrow.triangle.2.circlepath", title: "网络模式")
-                HStack(spacing: 8) {
-                    modePill(name: "宽带", on: s.netConf?["wifi"] == "on", color: AppTheme.good, icon: "wifi")
-                    modePill(name: "5G 数据", on: s.netConf?["data"] == "on", color: AppTheme.cyan, icon: "antenna.radiowaves.left.and.right")
-                }
-                Text(s.netMode == "auto" ? "宽带优先，5G 备用"
-                     : s.netMode == "lock-wan" ? "已锁定宽带"
-                     : s.netMode == "lock-5g" ? "已锁定 5G"
-                     : s.netMode == "none" ? "全部关闭（断网）"
-                     : s.netMode ?? "--")
-                    .font(.system(size: 12)).foregroundColor(AppTheme.textSecondary)
-            }
-        }
-    }
-
-    private func modePill(name: String, on: Bool, color: Color, icon: String) -> some View {
-        HStack(spacing: 5) {
-            StatusDot(color: on ? color : AppTheme.textSecondary)
-            Image(systemName: icon).font(.system(size: 11)).foregroundColor(on ? color : AppTheme.textSecondary)
-            Text(name).font(.system(size: 12, weight: .semibold))
-                .foregroundColor(on ? AppTheme.textPrimary : AppTheme.textSecondary)
-        }
-        .padding(.horizontal, 12).padding(.vertical, 7)
-        .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(on ? color.opacity(0.14) : Color.white.opacity(0.05)))
     }
 
     // MARK: 接入设备
@@ -296,7 +355,7 @@ struct DashboardView: View {
         }
     }
 
-    // MARK: 5G 信息
+    // MARK: 5G 模组日志
     private func modemCard(_ s: SystemStatus) -> some View {
         CardView {
             VStack(alignment: .leading, spacing: 8) {
@@ -343,9 +402,9 @@ struct DeviceRowView: View {
     var body: some View {
         HStack(spacing: 10) {
             ZStack {
-                Circle()
-                    .fill(device.online ? AppTheme.good.opacity(0.15) : Color.white.opacity(0.06))
-                    .frame(width: 34, height: 34)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(device.online ? AppTheme.good.opacity(0.14) : Color.white.opacity(0.06))
+                    .frame(width: 36, height: 36)
                 Image(systemName: deviceIcon)
                     .font(.system(size: 15))
                     .foregroundColor(device.online ? AppTheme.good : AppTheme.textSecondary)
@@ -371,11 +430,15 @@ struct DeviceRowView: View {
     }
 
     private var deviceIcon: String {
-        if device.name.lowercased().contains("iphone") || device.name.lowercased().contains("ipad") {
+        let n = device.name.lowercased()
+        if n.contains("iphone") || n.contains("ipad") || n.contains("apple") {
             return "iphone"
         }
-        if device.name.lowercased().contains("xiaomi") || device.name.lowercased().contains("mi ") {
+        if n.contains("xiaomi") || n.contains("mi ") || n.contains("redmi") {
             return "iphone"
+        }
+        if n.contains("tv") || n.contains("box") {
+            return "tv"
         }
         return "desktopcomputer"
     }
